@@ -1,0 +1,153 @@
+* SICP Chapter 1
+Building Abstractions with Procedures
+
+** The Elements of Programming
+
+**** 1.1
+Determine the result of each expression
+#+BEGIN_SRC scheme
+  10 ;  10
+  (+ 5 3 4) ;  10
+  (- 9 1);  8
+  (/ 6 2);  3
+  (+ (* 2 4) (- 4 6));  6
+  (define a 3);  "unspecified" (but a is three!)
+  (define b (+ a 1));  "unspecified" (but b is four!)
+  (+ a b (* a b));  19
+  (= a b);  #f
+  (if (and (> b a) (< b (* a b)))
+      b
+      a);  4
+  (cond ((= a 4) 6)
+        ((= b 4) (+ 6 7 a))
+        (else 25));  16
+  (* (cond ((> a b) a)
+           ((< a b) b)
+           (else -1))
+     (+ a 1));  16
+#+end_src
+
+**** 1.2
+Translate the following into prefix form:
+#+BEGIN_SRC latex
+
+  \frac{5+4+(2-(3-(6+\frac{4}{5})))}{3(6-2)(2-7)}
+
+#+END_SRC
+
+#+BEGIN_SRC scheme
+  (/ (+ 5 4 (- 2 (- 3 (+ 6 (/ 4 5)))))
+     (* 3 (- 6 2) (- 2 7)));  -37/150
+#+END_SRC
+
+**** 1.3
+Define a procedure that takes three numbers as arguments and returns
+the sum of the squares of the two larger numbers
+#+BEGIN_SRC scheme
+  (define (sum-of-squares-of-te-two-biggest a b c)
+    (define (square x) (* x x))
+    (define (min a b c)
+      (cond ((< a b c) a)
+            ((< b c) b)
+            (else c)))
+    (- (+ (square a) (square b) (square c))
+       (square (min a b c))))
+
+  (sum-of-squares-of-te-two-biggest 3 5 10);  125
+#+END_SRC
+
+**** 1.4
+Describe the behavior of the following function in terms of combining
+compound expressions:
+#+BEGIN_SRC scheme
+  (define (a-plus-abs-b a b)
+    ((if (> b 0) + -) a b))
+#+END_SRC
+
+As a result of the execution of the "if" procedure, one of the
+procedures "+" or "-" is returned and applied to the arguments "a" and
+"b"
+
+**** 1.5
+Describe the difference in behavior of the following code for
+applicative-order and normal-order evaluation:
+#+BEGIN_SRC scheme
+  (define (p) (p))
+
+  (define (test x y)
+    (if (= x 0)
+        0
+        y))
+
+  (test 0 (p))
+#+END_SRC
+
+In applicative order evaluation the call to "test" never completes, because
+executing "p" executes "p" which executes "p" (and so on).  Under normal-order
+evaluation the application of "p" is never attempted because the test "x = 0" is
+true and the else branch is never executed.
+
+**** 1.6
+Given the following replacement for the built-in special form "if" and the
+proceeding definition of an iterative square root calculator, what happens when
+sqrt-iter is applied?
+
+#+BEGIN_SRC scheme
+  (define (new-if condition then otherwise)
+    (cond (condition then)
+          (else otherwise)))
+
+  (define (sqrt-iter guess x)
+    (new-if (good-enough? guess x) guess
+            (sqrt-iter (improve guess x) x)))
+#+END_SRC
+
+Because new-if is not a special form, its "else" case is always evaluated in
+applicative order evaluation. The "escape clause" will never be able to end
+evaluation and the program will recurse infinitely (or have a stack overflow,
+depending on what happens inside "improve").
+
+**** 1.7
+The "good-enough?" procedure uses a fixed value (0.001) to test the guess. For
+very small numbers, the margin of error allowed by 0.001 is too large to get an
+accurate guess. For large numbers, the fixed value is too small and results in
+extremely long runtime when the guess was already accurate in the given
+scenario.
+
+#+BEGIN_SRC scheme
+  (define (sqrt-iter guess x)
+    (if (good-enough? guess (improve guess x)) (exact->inexact guess)
+        (sqrt-iter (improve guess x) x)))
+
+  (define (good-enough? guess improved-guess)
+    (< (abs (- guess improved-guess)) 0.001))
+
+  (define (improve guess x)
+    (let ((avg (lambda (a b) (/ (+ a b) 2))))
+      (avg guess (/ x guess))))
+#+END_SRC
+
+The new set of procedures observes the diminishing value of "improve" and when
+the difference between the guess and an improved guess is small enough,
+considers it accurate.
+
+**** 1.8
+Newton's method for cube roots defines the improvement of a guess to be
+#+BEGIN_SRC latex
+  \frac{\frac{x}{y^{2}}+2y}{3}
+#+END_SRC
+
+Use the formula to implement a cube-root procedure similar to the previous
+square root.
+#+BEGIN_SRC scheme
+  (define (cbrt-iter guess x)
+    (if (good-enough? guess (improve guess x)) (exact->inexact guess)
+        (cbrt-iter (improve guess x) x)))
+
+  (define (good-enough? guess improved-guess)
+    (< (abs (- guess improved-guess)) 0.001))
+
+  (define (improve guess x)
+    (/ (+ (/ x (* guess guess)) (* 2 guess))
+       3))
+#+END_SRC
